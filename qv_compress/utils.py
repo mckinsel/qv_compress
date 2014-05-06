@@ -50,8 +50,8 @@ def remove_deletions_and_skips(ary, sentinel_index):
     del_indices = numpy.where(ary[:, sentinel_index] == 255)[0]
     rows_to_del = numpy.concatenate((skip_indices, del_indices), 0)
 
-    ary = numpy.delete(ary, rows_to_del, 0)
-
+    return numpy.delete(ary, rows_to_del, 0)
+    
 
 def fix_mergeqv(ary, merge_index, new_extreme_value):
     """MergeQV sometimes takes the value 100. This isn't a genuine phred

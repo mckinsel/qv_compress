@@ -37,6 +37,7 @@ def get_parser():
 
     parser_build_code_book.add_argument(
         "num_codes",
+        type=int,
         help="Number of clusters to create for the code book.")
 
     parser_build_code_book.add_argument(
@@ -89,6 +90,7 @@ def setup_log(alog, file_name=None, level=logging.DEBUG, str_formatter=None):
 
 def main():
     """Entry point."""
+
     parser = get_parser()
     args = parser.parse_args()
 
@@ -99,9 +101,10 @@ def main():
 
     if args.cmd == 'build_code_book':
         code_book, feature_list = qv_compress.code_book.create_code_book(
-            args.training_cmp_h5, args.num_observations,
-            args.num_codes)
+            args.training_cmp_h5, args.num_codes,
+            args.num_observations)
 
-        numpy.savetxt(args.output_csv, code_book, header=','.join(feature_list))
+        numpy.savetxt(args.output_csv, code_book, header=','.join(feature_list),
+                     fmt='%2.0f', delimiter=',')
     else:
         print "Soon..."

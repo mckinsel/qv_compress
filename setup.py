@@ -20,7 +20,7 @@ setup(
     author="Pacific Biosciences",
     author_email="mkinsella@pacificbiosciences.com",
     description="Tools to apply vector quantization to PacBio quality values.",
-    entry_points={'console_scripts': ['qv_compress = qv_compress.main:main']},
+    entry_points={'console_scripts': ['compress_qvs.py = qv_compress.main:main']},
     license=open("LICENSES.txt").read(),
     zip_safe = False,
     install_requires=_get_requirements(_get_local_file(_REQUIREMENTS_FILE))
