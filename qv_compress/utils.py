@@ -9,7 +9,7 @@ QUIVER_FEATURES = ('DeletionQV',
 TAG_ASSIGNMENTS = ((45, 0), # -
                    (65, 1), # A
                    (67, 2), # C
-                   (71, 3), # T
+                   (71, 3), # G
                    (78, 4), # N
                    (84, 5)) # T
 
@@ -21,6 +21,11 @@ def spread_tag(ary, tag_index, inverse=False):
     and C (67) are nearby and could perhaps even be merged to B in a
     cluster center. But that's bad, so we have to replace the ASCII
     values wil values that don't have false proximity.
+    
+    NB!!:
+    This isn't quite right. While this help prevent letter merging
+    (changing A or C to B), it tends to favor G's because G is in the
+    middle. Need to do a little more to address categorical data.
 
     Args:
         ary: a numpy array
