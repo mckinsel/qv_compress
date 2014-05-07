@@ -5,15 +5,17 @@ import numpy
 import sys
 
 import qv_compress.code_book
+import qv_compress.quantize
 
-log = logging.getLogger(__name__)
+log = logging.getLogger('main')
 
 def get_parser():
     """Return an ArgumentParser for qv_compress options."""
 
     desc = "Apply vector quantization to PacBio quality values in a cmp.h5"
     parser = argparse.ArgumentParser(prog='qv_compress.py', description=desc)
-    parser.add_argument("--debug", help="Output detailed log information.")
+    parser.add_argument("--debug", help="Output detailed log information.",
+                        action='store_true')
     subparsers = parser.add_subparsers(dest="cmd")
 
     parser_build_code_book = subparsers.add_parser(
@@ -105,6 +107,8 @@ def main():
             args.num_observations)
 
         numpy.savetxt(args.output_csv, code_book, header=','.join(feature_list),
-                     fmt='%2.0f', delimiter=',')
+                      fmt='%2.0f', delimiter=',')
+    elif args.cmd == 'add_vq_track':
+        qv_compress.quantize.add_vq_track(args.cmp_h5_file, args.code_book_csv)
     else:
         print "Soon..."

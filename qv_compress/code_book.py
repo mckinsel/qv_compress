@@ -1,58 +1,14 @@
 """code_book contains methods for creating a QV code book from a cmp.h5 file."""
-
 import h5py
+import logging
 import numpy
 
 from scipy.cluster import vq
 from qv_compress import utils
 
-def read_from_cmph5(cmph5_file, num_observations, feature_list):
-    """Read desired features from a cmp.h5 file and return them shaped
-    appropriately for scipy.cluster.vq.
+log = logging.getLogger('main')
 
-    Args:
-        cmph5_file: An h5py.File object for a cmp.h5 file
-        num_observations: the desired number of observations to read
-        feature_list: list of feature names to read. This really, really should
-            just be QUIVER_FEATURES.
-
-    Returns:
-        training_data: a numpy array with shape
-            (num_observations x len(feature_list))
-    """
-
-    # I know they're not floats, but these observations will need to be
-    # centered and whitened before clustering
-    training_data = numpy.zeros(shape=(num_observations, len(feature_list)),
-                                dtype='float32')
-
-    aln_group_paths = cmph5_file['AlnGroup/Path']
-    observations_so_far = 0
-
-    for aln_group_path in aln_group_paths:
-        observations_to_read = min(
-            num_observations - observations_so_far,
-            len(cmph5_file[aln_group_path][feature_list[0]]))
-
-        for feature_i in xrange(len(feature_list)):
-            feature = feature_list[feature_i]
-            training_data[
-                observations_so_far:observations_so_far + observations_to_read,
-                feature_i] = (cmph5_file[aln_group_path][feature]
-                                        [:observations_to_read])
-
-        observations_so_far += observations_to_read
-        if observations_so_far >= num_observations:
-            break
-
-    if observations_so_far < num_observations:
-        warnings.warn("Only found {n} observations in the cmp.h5 file, less "
-                      "than the requested {r}."
-                      .format(n=observations_so_far, r=num_observations))
-        numpy.resize(training_data, (observations_so_far, len(feature_list)))
-    return  training_data
-
-def make_data_clusterable(training_array, feature_list, std_dev=None):
+def make_data_clusterable(training_array, feature_list, std_dev=None, remove_skips=True):
     """Convert data to and from raw and clusterable states. The raw QVs
     have some attributes that will break clustering, so those have to be
     cleaned up before we pass anything to k-means. 
@@ -69,14 +25,18 @@ def make_data_clusterable(training_array, feature_list, std_dev=None):
     """
     
     # Fix the PacBio-specific problems
-    clusterable_array = utils.remove_deletions_and_skips(
-        training_array, feature_list.index("InsertionQV"))
+    if remove_skips:
+        clusterable_array = utils.remove_deletions_and_skips(
+            training_array, feature_list.index("InsertionQV"))
+    else:
+        clusterable_array = numpy.array(training_array, copy=True)
     utils.spread_tag(clusterable_array, feature_list.index('DeletionTag'),
                      inverse=False)
     utils.fix_mergeqv(clusterable_array, feature_list.index('MergeQV'), 40)
     
     # Whiten
-    std_dev = numpy.std(clusterable_array, axis=0)
+    if std_dev is None:
+        std_dev = numpy.std(clusterable_array, axis=0)
     clusterable_array = clusterable_array / std_dev
     return clusterable_array, std_dev
 
@@ -105,19 +65,22 @@ def check_for_features(cmph5_file, feature_list):
 def create_code_book(cmph5_filename, num_clusters, num_observations,
                      feature_list=utils.QUIVER_FEATURES):
     """Create a code book."""
+    log.debug("Checking for missing features...")
     cmph5_file = h5py.File(cmph5_filename, 'r')
-
     missing_features = check_for_features(cmph5_file, feature_list)
     if missing_features:
         raise ValueError("Cmp.h5 file {c} is missing the following quality "
                          "values: {m}"
                          .format(c=cmph5_filename, m=missing_features))
+    cmph5_file.close()
+    log.debug("All required features present!")
 
-    training_array = read_from_cmph5(cmph5_file, num_observations,
-                                     feature_list)
+    training_array = numpy.concatenate(
+        [k.data for k in utils.cmph5_chunker(cmph5_filename, feature_list, num_observations, num_observations)], axis=0)
+
     clusterable_array, std_dev = make_data_clusterable(training_array,
                                                        feature_list)
     code_book, distortion = vq.kmeans(clusterable_array, num_clusters)
-    
+
     raw_code_book = convert_to_raw(code_book, feature_list, std_dev)
     return raw_code_book, feature_list
