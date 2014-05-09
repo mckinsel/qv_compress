@@ -1,3 +1,4 @@
+"""Some utility methods for reading and modifying QVs in a cmp.h5 file."""
 import collections
 import h5py
 import numpy 
@@ -78,13 +79,17 @@ def fix_mergeqv(ary, merge_index, new_extreme_value):
 
 def cmph5_chunker(cmph5_filename, feature_list, chunk_size, max_observations=None):
     """Generator function for reading through a cmp.h5 file in chunks
-    and producing appropriately shaped arrays for kmeans.
+    and producing appropriately shaped arrays for kmeans. Note that the size
+    of the returned chunk will be smaller than chunk_size if the chunk
+    would extend past the end of an alignment group.
 
     Args:
         cmph5_filename: path to a cmph5 file
         feature_list: list of features to read from the cmph5 file. Usually
             just utils.QUIVER_FEATURES
         chunk_size: the number of aligned bases to read at a time
+        max_observations: stop after reading this many bases. If None, just
+            read until the end of the file
 
     Yields:
         Tuples of (aln_group_path, aln_group_start, aln_group_end, data)

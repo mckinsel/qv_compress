@@ -22,17 +22,12 @@ def get_parser():
         "build_code_book",
         help="Create a QV code book from a cmp.h5 file.")
 
-    parser_add_vq_track = subparsers.add_parser(
-        "add_vq_track",
-        help=("Add an array of code assignments to an cmp.h5 file from an "
-              "existing code book."))
+    parser_encode_cmph5 = subparsers.add_parser(
+        "encode_cmph5",
+        help="Add VQ values to a cmp.h5 file.")
 
-    parser_replace_qvs = subparsers.add_parser(
-        "replace_qvs",
-        help=("Replace Quiver QVs in a cmp.h5 file with values from a code "
-              "book. Note that this is a destructive operation."))
 
-    #build_code_book
+    # build_code_book
     parser_build_code_book.add_argument(
         "training_cmp_h5",
         help="Cmp.h5 file from which QV clusters will be created")
@@ -53,23 +48,22 @@ def get_parser():
         help="CSV file where code book will be written.",
         default="code_book.csv")
 
-    #add_vq_track
-    parser_add_vq_track.add_argument(
+    # encode_cmp_h5
+    parser_encode_cmph5.add_argument(
         "cmp_h5_file",
-        help="File to which a VQ track will be added.")
+        help="File to which a VQ information will be added.")
 
-    parser_add_vq_track.add_argument(
+    parser_encode_cmph5.add_argument(
         "code_book_csv",
         help="Code book created by 'build_code_book'.")
+    
+    parser_encode_cmph5.add_argument(
+        "--overwrite_qvs",
+        action='store_true',
+        default=False,
+        help=("Overwrite the QV datasets in the cmp.h5 file with "
+              "values from the code book."))
 
-    #replace_qvs
-    parser_replace_qvs.add_argument(
-        "cmp_h5_file",
-        help="File to which a VQ track will be added.")
-
-    parser_replace_qvs.add_argument(
-        "code_book_csv",
-        help="Code book created by 'build_code_book'.")
 
     return parser
 
@@ -108,7 +102,6 @@ def main():
 
         numpy.savetxt(args.output_csv, code_book, header=','.join(feature_list),
                       fmt='%2.0f', delimiter=',')
-    elif args.cmd == 'add_vq_track':
-        qv_compress.quantize.add_vq_track(args.cmp_h5_file, args.code_book_csv)
-    else:
-        print "Soon..."
+    elif args.cmd == 'encode_cmph5':
+        qv_compress.quantize.add_vqs_to_cmph5(
+            args.cmp_h5_file, args.code_book_csv, args.overwrite_qvs)

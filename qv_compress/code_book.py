@@ -41,6 +41,9 @@ def make_data_clusterable(training_array, feature_list, std_dev=None, remove_ski
     return clusterable_array, std_dev
 
 def convert_to_raw(clusterable_array, feature_list, std_dev):
+    """Convert an array that's been modified for kmeans back to raw values
+    found in a cmp.h5 file.
+    """
     
     raw_array = (clusterable_array * std_dev).astype('uint8')
     utils.spread_tag(raw_array, feature_list.index("DeletionTag"),
@@ -64,8 +67,24 @@ def check_for_features(cmph5_file, feature_list):
 
 def create_code_book(cmph5_filename, num_clusters, num_observations,
                      feature_list=utils.QUIVER_FEATURES):
-    """Create a code book."""
+    """Create a code book from a cmp.h5 file.
+    
+    Args:
+        cmph5_filename: path to the cmp.h5
+        num_clusters: the number of codes to create in the code book
+        num_observations: the number of bases to use to create the code book
+            clusters
+        feature_list: the list of features to read from the cmp.h5 to 
+            cluster
+
+    Returns:
+        code_book: a numpy array of cluster centers. rows are codes, columns are
+            features
+        feature_list: labels for the columns of the code book
+    """
+
     log.debug("Checking for missing features...")
+
     cmph5_file = h5py.File(cmph5_filename, 'r')
     missing_features = check_for_features(cmph5_file, feature_list)
     if missing_features:
@@ -76,7 +95,8 @@ def create_code_book(cmph5_filename, num_clusters, num_observations,
     log.debug("All required features present!")
 
     training_array = numpy.concatenate(
-        [k.data for k in utils.cmph5_chunker(cmph5_filename, feature_list, num_observations, num_observations)], axis=0)
+        [k.data for k in utils.cmph5_chunker(
+            cmph5_filename, feature_list, num_observations, num_observations)], axis=0)
 
     clusterable_array, std_dev = make_data_clusterable(training_array,
                                                        feature_list)
