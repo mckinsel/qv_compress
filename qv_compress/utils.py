@@ -9,12 +9,28 @@ QUIVER_FEATURES = ('DeletionQV',
                    'MergeQV',
                    'SubstitutionQV')
 
+QUIVER_SAM_TAGS = {'DeletionQV': 'dq',
+                   'DeletionTag': 'dt',
+                   'InsertionQV': 'iq',
+                   'MergeQV': 'mq',
+                   'SubstitutionQV': 'sq'}
+
 TAG_ASSIGNMENTS = ((45, 0), # -
                    (65, 1), # A
                    (67, 2), # C
                    (71, 3), # G
                    (78, 4), # N
                    (84, 5)) # T
+
+CHAR_OFFSET = 33
+
+def char_to_qv(char):
+    """Converts a phred-encoded char to a numeric QV."""
+    return ord(char) - CHAR_OFFSET
+
+def qv_to_char(qv):
+    """Convert a qv to a phred-encoded char."""
+    return chr(qv + CHAR_OFFSET)
 
 def spread_tag(ary, tag_index, inverse=False):
     """Replace tag values with values that are equidistant.
@@ -35,7 +51,6 @@ def spread_tag(ary, tag_index, inverse=False):
         tag_index: Index of column in ary corresponding to the tag
         inverse: If True, convert back to original ASCII values.
     """
-
     for k, v in TAG_ASSIGNMENTS:
         if not inverse:
             ary[:, tag_index][ary[:, tag_index] == k] = v
